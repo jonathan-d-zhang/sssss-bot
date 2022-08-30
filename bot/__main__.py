@@ -1,19 +1,25 @@
 import discord
 from discord.ext import commands
 import pathlib
-from typing import Optional
-import sqlite3
+import asyncio
+import logging
 
-intents = discord.Intents(
-    message_content=True,
-    messages=True,
-)
+discord.utils.setup_logging()
 
+log = logging.getLogger(__name__)
+
+intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-@bot.command()
-async def post(ctx, description: str, test_cases: Optional[list[tuple[object, object]]]):
-    print("used post")
+@bot.event
+async def on_ready():
+    log.info("Ready")
 
 
-bot.run(pathlib.Path("../token.txt").read_text())
+async def main():
+    await bot.load_extension("bot.problem")
+
+    await bot.start(pathlib.Path("../token.txt").read_text())
+
+asyncio.run(main())
+
