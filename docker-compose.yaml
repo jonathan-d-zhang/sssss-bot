@@ -1,0 +1,12 @@
+services:
+  bot:
+    build:
+        context: .
+    tty: true
+    volumes:
+      - type: volume
+        source: db-data
+        target: /data
+
+volumes:
+  db-data:
