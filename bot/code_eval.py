@@ -38,8 +38,7 @@ class CodeEval(commands.Cog):
         self.bot = bot
 
     async def run(self, code):
-        print(constants.Snekbox.snekbox_url)
-        r = await self.bot.http_session.post(constants.Snekbox.snekbox_url, data={"input": code})
+        r = self.bot.http_session.post(constants.Snekbox.snekbox_url, data={"input": code})
         return r.json()
 
     @commands.command()
