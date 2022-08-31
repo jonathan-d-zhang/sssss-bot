@@ -13,6 +13,7 @@ if Path("config.toml").exists():
 else:
     log.error("No config, exiting")
     import sys
+
     sys.exit(1)
 
 
@@ -60,8 +61,8 @@ class Guild(metaclass=ConfigMeta):
     teachers: list[int]
     student_channels: list[str]
 
+
 class Snekbox(metaclass=ConfigMeta):
-    location=""
+    location = ""
 
     snekbox_url: str
-
