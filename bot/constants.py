@@ -9,9 +9,11 @@ if Path("config.toml").exists():
     log.info("Loading config found at config.toml")
     with open("config.toml") as f:
         data = toml.load(f)
-    log.debug("Loaded config data %s" % data)
+    log.info(f"Loaded config data {data}")
 else:
-    log.info("config.toml not found, using default config")
+    log.error("No config, exiting")
+    import sys
+    sys.exit(1)
 
 
 class ConfigMeta(type):

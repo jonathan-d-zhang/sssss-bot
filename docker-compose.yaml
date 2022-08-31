@@ -8,5 +8,12 @@ services:
         source: db-data
         target: /data
 
+  snekbox:
+    image: ghcr.io/python-discord/snekbox:latest
+    init: true
+    ipc: none
+    ports:
+     - "127.0.0.1:8060:8060"
+    privileged: true
 volumes:
   db-data:

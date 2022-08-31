@@ -1,4 +1,4 @@
-snekbox_url = "localhost:8060/eval"
+snekbox_url = "http://snekbox:8060/eval"
 
 [bot]
 prefix = "!"

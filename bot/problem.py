@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 def is_teacher():
     async def predicate(ctx):
-        return ctx.author.id in Guild.teachers
+        return str(ctx.author.id) in Guild.teachers
 
     return commands.check(predicate)
 
@@ -51,8 +51,8 @@ class Problem(commands.Cog):
     @commands.command()
     @is_teacher()
     async def edit(self, ctx, problem_number: int, *, description: str):
-        cur = self.conn.cursor()
-        cur.execute(
+        cur = await self.conn.cursor()
+        await cur.execute(
             "UPDATE problems SET description = ?2 WHERE id = ?1",
             (problem_number, description),
         )
