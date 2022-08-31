@@ -9,7 +9,7 @@ if Path("config.toml").exists():
     log.info("Loading config found at config.toml")
     with open("config.toml") as f:
         data = toml.load(f)
-    print(data)
+    log.debug("Loaded config data %s" % data)
 else:
     log.info("config.toml not found, using default config")
 
@@ -29,27 +29,37 @@ class ConfigMeta(type):
         if cls.location is None:
             assert False
 
-        location = collections.deque(cls.location.split("."))
-
         try:
-            outer = data[location.popleft()]
-            while location:
-                outer = outer[location.popleft()]
+            path = collections.deque(cls.location.split("."))
+            outer = data
+            while path:
+                n = path.popleft()
+                if n:
+                    outer = outer[n]
         except KeyError:
-            print(f"Invalid location: {cls.location}")
+            log.error("Invalid location: %s", cls.location)
         else:
             try:
                 return outer[name]
             except KeyError:
-                print(f"Config value {name} not found")
+                log.error("Config value %s not found", name)
 
 
 class Bot(metaclass=ConfigMeta):
     location = "bot"
+
     prefix: str
     token_file: str
 
 
 class Guild(metaclass=ConfigMeta):
     location = "guild"
+
     teachers: list[int]
+    student_channels: list[str]
+
+class Snekbox(metaclass=ConfigMeta):
+    location=""
+
+    snekbox_url: str
+

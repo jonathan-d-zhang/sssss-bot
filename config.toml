@@ -1,6 +1,14 @@
+snekbox_url = "localhost:8060/eval"
+
 [bot]
 prefix = "!"
 token_file = "env/token.txt"
 
 [guild]
-teachers = [182894631921516545, 686394452788773036]
+teachers = ["182894631921516545", "686394452788773036"]
+student_channels = [
+    "1014373177360662640",
+    "1014373098184777728",
+    "1014373012105089134",
+]
+
