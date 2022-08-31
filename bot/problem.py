@@ -1,9 +1,10 @@
-from discord.ext import commands
-import logging
 import asyncio
-import aiosqlite
-from bot import Bot
+import logging
 
+import aiosqlite
+from discord.ext import commands
+
+from bot import Bot
 from bot.constants import Guild
 
 log = logging.getLogger(__name__)

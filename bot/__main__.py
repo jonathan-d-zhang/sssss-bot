@@ -1,9 +1,11 @@
-import discord
-import pathlib
 import asyncio
 import logging
-from bot import constants, Bot
+import pathlib
+
+import discord
 import httpx
+
+from bot import Bot, constants
 
 discord.utils.setup_logging()
 

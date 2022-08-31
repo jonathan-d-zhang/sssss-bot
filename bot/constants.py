@@ -1,7 +1,8 @@
-import toml
-from pathlib import Path
-import logging
 import collections
+import logging
+from pathlib import Path
+
+import toml
 
 log = logging.getLogger(__name__)
 

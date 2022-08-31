@@ -1,7 +1,8 @@
-from discord.ext import commands
-import httpx
-import aiosqlite
 import asyncio
+
+import aiosqlite
+import httpx
+from discord.ext import commands
 
 
 class Bot(commands.Bot):

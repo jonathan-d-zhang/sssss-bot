@@ -1,7 +1,9 @@
+import re
+
 from discord.ext import commands
 from discord.ext.commands.converter import Converter
+
 from bot import constants
-import re
 
 # Taken from github.com/python-discord/bot-core
 FORMATTED_CODE_REGEX = re.compile(
