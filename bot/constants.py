@@ -11,8 +11,8 @@ if Path("config.toml").exists():
         data = toml.load(f)
     print(data)
 else:
-    log.info("config.toml not found, using default config")
-
+    log.error("No config, exiting")
+    exit(1)
 
 
 class ConfigMeta(type):
@@ -23,7 +23,7 @@ class ConfigMeta(type):
     """
 
     location = None
-    
+
     def __getattr__(cls, name):
         name = name.lower()
 
@@ -48,9 +48,9 @@ class ConfigMeta(type):
 class Bot(metaclass=ConfigMeta):
     location = "bot"
     prefix: str
+    token_file: str
 
 
 class Guild(metaclass=ConfigMeta):
     location = "guild"
     teachers: list[int]
-
