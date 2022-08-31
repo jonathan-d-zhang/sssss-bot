@@ -1,6 +1,7 @@
 from discord.ext import commands
 import logging
-import sqlite3
+import asyncio
+import aiosqlite
 
 from bot.constants import Guild
 
@@ -17,35 +18,33 @@ def is_teacher():
 class Problem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.conn = sqlite3.connect("sssss.db")
+        asyncio.create_task(self.setup_database())
 
-        self.setup_database()
-
-    def setup_database(self):
-        cur = self.conn.cursor()
-        cur.execute(
+    async def setup_database(self):
+        self.conn = await aiosqlite.connect("sssss.db")
+        await self.conn.execute(
             "CREATE TABLE IF NOT EXISTS problems(id INTEGER PRIMARY KEY, description TEXT)"
         )
-        cur.execute(
+        await self.conn.execute(
             "CREATE TABLE IF NOT EXISTS test_cases(tc_id INTEGER PRIMARY KEY, input TEXT, output TEXT, problem_number INTEGER, FOREIGN KEY(problem_number) REFERENCES problems(id))"
         )
-        self.conn.commit()
+        await self.conn.commit()
 
     @commands.command()
     @is_teacher()
     async def post(self, ctx, *, description: str):
         log.info(f"{ctx.author} used post with {description=}")
-        cur = self.conn.cursor()
-        cur.execute("INSERT INTO problems(description) VALUES(?)", (description,))
-        self.conn.commit()
+        await self.conn.execute(
+            "INSERT INTO problems(description) VALUES(?)", (description,)
+        )
+        await self.conn.commit()
 
     @commands.command()
     async def dump(self, ctx):
-        cur = self.conn.cursor()
-        cur.execute("SELECT * FROM problems")
-        problems = cur.fetchall()
-        cur.execute("SELECT * FROM test_cases")
-        test_cases = cur.fetchall()
+        async with self.conn.execute("SELECT * FROM problems") as cursor:
+            problems = await cursor.fetchall()
+        async with self.conn.execute("SELECT * FROM test_cases") as cursor:
+            test_cases = await cursor.fetchall()
 
         await ctx.send(str(problems) + "\n" + str(test_cases))
 
@@ -57,6 +56,7 @@ class Problem(commands.Cog):
             "UPDATE problems SET description = ?2 WHERE id = ?1",
             (problem_number, description),
         )
+        await self.conn.commit()
 
         log.info("{ctx.author} edited description of problem {problem_number}")
         await ctx.send(
@@ -70,11 +70,11 @@ class Problem(commands.Cog):
         Add a test case to a given function. The test case must be in the format:
         "input:#:output"
         """
-        cur = self.conn.cursor()
-        cur.execute(
+        await self.conn.execute(
             "INSERT INTO test_cases(input, output, problem_number) VALUES(?1, ?2, ?3)",
             [*test_case.split(":#:"), problem_number],
         )
+        await self.conn.commit()
 
         log.info(f"{ctx.author} added test case to problem {problem_number}")
         await ctx.send(

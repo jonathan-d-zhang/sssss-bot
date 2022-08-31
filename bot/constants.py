@@ -14,16 +14,15 @@ else:
     log.info("config.toml not found, using default config")
 
 
-
 class ConfigMeta(type):
     """
-    Metaclass to allow accessing config data using dot notation, e.g. constants.Guild.BOT_TOKEN
+    Metaclass to allow accessing config data using dot notation, e.g. constants.Guild.token_file
 
     Supports arbitrary nesting of tables.
     """
 
     location = None
-    
+
     def __getattr__(cls, name):
         name = name.lower()
 
@@ -48,9 +47,9 @@ class ConfigMeta(type):
 class Bot(metaclass=ConfigMeta):
     location = "bot"
     prefix: str
+    token_file: str
 
 
 class Guild(metaclass=ConfigMeta):
     location = "guild"
     teachers: list[int]
-
