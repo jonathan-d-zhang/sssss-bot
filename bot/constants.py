@@ -60,7 +60,7 @@ class Guild(metaclass=ConfigMeta):
     location = "guild"
 
     teachers: list[int]
-    student_channels: list[str]
+    student_channels: list[int]
 
 
 class Snekbox(metaclass=ConfigMeta):

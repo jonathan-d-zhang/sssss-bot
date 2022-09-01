@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 def is_teacher():
     async def predicate(ctx):
-        return str(ctx.author.id) in Guild.teachers
+        return ctx.author.id in Guild.teachers
 
     return commands.check(predicate)
 
@@ -34,12 +34,12 @@ class Problem(commands.Cog):
         await self.bot.db.commit()
 
     @group(name="problem", aliases=("p",), invoke_without_command=True)
-    async def problem_group(self, ctx):
+    async def problem_group(self, ctx: Context) -> None:
         await ctx.send_help(ctx.command)
 
     @problem_group.command(aliases=("p",))
     @is_teacher()
-    async def post(self, ctx: Context, *, description: str):
+    async def post(self, ctx: Context, *, description: str) -> None:
         log.info(f"{ctx.author} used post with {description=}")
         await self.bot.db.execute(
             "INSERT INTO problems(description) VALUES(?)", (description,)
@@ -48,7 +48,7 @@ class Problem(commands.Cog):
         await ctx.send(f"{ctx.author.mention} Successfully added problem!")
 
     @problem_group.command()
-    async def dump(self, ctx: Context):
+    async def dump(self, ctx: Context) -> None:
         async with self.bot.db.execute("SELECT * FROM problems") as cursor:
             problems = await cursor.fetchall()
         async with self.bot.db.execute("SELECT * FROM test_cases") as cursor:
@@ -58,7 +58,9 @@ class Problem(commands.Cog):
 
     @problem_group.command(aliases=("e",))
     @is_teacher()
-    async def edit(self, ctx: Context, problem_number: int, *, description: str):
+    async def edit(
+        self, ctx: Context, problem_number: int, *, description: str
+    ) -> None:
         cur = await self.bot.db.cursor()
         await cur.execute(
             "UPDATE problems SET description = ?2 WHERE id = ?1",
@@ -77,14 +79,15 @@ class Problem(commands.Cog):
 
     @test_case_group.command(name="add", aliases=("a",))
     @is_teacher()
-    async def add_test_case(self, ctx: Context, problem_number: int, test_case: str):
+    async def add_test_case(
+        self, ctx: Context, problem_number: int, input: str, output: str
+    ) -> None:
         """
-        Add a test case to a given function. The test case must be in the format:
-        "input:#:output"
+        Add a test case to a given problem.
         """
         await self.bot.db.execute(
             "INSERT INTO test_cases(input, output, problem_number) VALUES(?1, ?2, ?3)",
-            [*test_case.split(":#:"), problem_number],
+            [input, output, problem_number],
         )
         await self.bot.db.commit()
 

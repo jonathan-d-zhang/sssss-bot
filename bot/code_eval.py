@@ -1,9 +1,10 @@
 import re
 
 from discord.ext import commands
+from discord.ext.commands import Context
 from discord.ext.commands.converter import Converter
 
-from bot import constants
+from bot import Bot, constants
 
 # Taken from github.com/python-discord/bot-core
 FORMATTED_CODE_REGEX = re.compile(
@@ -18,10 +19,10 @@ FORMATTED_CODE_REGEX = re.compile(
 
 
 def channel_matches():
-    async def predicate(ctx):
+    async def predicate(ctx: Context):
         return (
-            str(ctx.channel.id) in constants.Guild.student_channels
-            or str(ctx.author.id) in constants.Guild.teachers
+            ctx.channel.id in constants.Guild.student_channels
+            or ctx.author.id in constants.Guild.teachers
         )
 
     return commands.check(predicate)
@@ -29,7 +30,7 @@ def channel_matches():
 
 class CodeblockConverter(Converter):
     @classmethod
-    async def convert(cls, ctx, code: str) -> str:
+    async def convert(cls, ctx: Context, code: str) -> str:
         if match := FORMATTED_CODE_REGEX.search(code):
             return match.group("code")
         return ""
@@ -47,7 +48,9 @@ class CodeEval(commands.Cog):
 
     @commands.command()
     @channel_matches()
-    async def check(self, ctx, problem_number: int, *, code: CodeblockConverter):
+    async def check(
+        self, ctx: Context, problem_number: int, *, code: CodeblockConverter
+    ):
         async with self.bot.db.execute(
             "SELECT * FROM test_cases WHERE problem_number = ?", (problem_number,)
         ) as cursor:
@@ -70,7 +73,7 @@ sys.stdin = StringIO('{test_case[1]}')
                 await ctx.send(f"Passed test case {test_case[0]}!")
 
     @commands.command(name="eval", aliases=("e",))
-    async def eval_command(self, ctx, *, code: CodeblockConverter):
+    async def eval_command(self, ctx: Context, *, code: CodeblockConverter):
         async with ctx.typing():
             result = await self.run(code)
         await ctx.send(
@@ -78,5 +81,5 @@ sys.stdin = StringIO('{test_case[1]}')
         )
 
 
-async def setup(bot):
+async def setup(bot: Bot):
     await bot.add_cog(CodeEval(bot))
