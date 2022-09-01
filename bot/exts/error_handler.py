@@ -4,7 +4,7 @@ from discord import Embed
 from discord.ext.commands import Cog, Context, errors
 
 from bot import Bot
-from bot.problem import InvalidProblemNumber, InvalidTestCaseNumber
+from bot.exts.problem import InvalidProblemNumber, InvalidTestCaseNumber
 
 log = logging.getLogger(__name__)
 

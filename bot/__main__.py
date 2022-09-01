@@ -23,9 +23,9 @@ async def main():
         )
 
         await bot.setup_database()
-        await bot.load_extension("bot.problem")
-        await bot.load_extension("bot.code_eval")
-        await bot.load_extension("bot.error_handler")
+        await bot.load_extension("bot.exts.problem")
+        await bot.load_extension("bot.exts.code_eval")
+        await bot.load_extension("bot.exts.error_handler")
 
         await bot.start(pathlib.Path(constants.Bot.token_file).read_text())
 
