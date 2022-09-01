@@ -1,6 +1,8 @@
 import re
+import typing
 
 from discord import Embed
+from discord.errors import HTTPException
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ext.commands.converter import Converter
@@ -51,13 +53,18 @@ class CodeblockConverter(Converter):
         return ""
 
 
+class SnekboxResponse(typing.TypedDict):
+    stdout: str
+    returncode: int
+
+
 class CodeEval(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def run(self, code):
+    async def run(self, code) -> SnekboxResponse:
         r = self.bot.http_session.post(
-            constants.Snekbox.snekbox_url, data={"input": code}
+            constants.Snekbox.snekbox_url, json={"input": code}
         )
         return r.json()
 
@@ -98,8 +105,10 @@ class CodeEval(commands.Cog):
     async def eval_command(self, ctx: Context, *, code: CodeblockConverter):
         async with ctx.typing():
             result = await self.run(code)
+        # truncate output to 10 lines
+        output = "\n".join(result["stdout"].split("\n", 11)[:10])
         await ctx.send(
-            f"{ctx.author.mention} Your eval finished with exit code {result['returncode']}:\n```\n{result['stdout']}\n```"
+            f"{ctx.author.mention} Your eval finished with exit code {result['returncode']}:\n```\n{output}\n```"
         )
 
 
