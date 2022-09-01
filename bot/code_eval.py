@@ -1,5 +1,6 @@
 import re
 
+from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ext.commands.converter import Converter
@@ -16,6 +17,20 @@ FORMATTED_CODE_REGEX = re.compile(
     r"(?P=delim)",  # match the exact same delimiter from the start again
     flags=re.DOTALL | re.IGNORECASE,  # "." also matches newlines, case insensitive
 )
+
+CODE_TEMPLATE = """\
+from io import StringIO
+import sys
+
+sys.stdin = StringIO('{input}')
+{code}
+"""
+
+CHECK_OUTPUT_TEMPLATE = """\
+{mention} Your test case results:
+{results}
+{summary}
+"""
 
 
 def channel_matches():
@@ -56,28 +71,35 @@ class CodeEval(commands.Cog):
         ) as cursor:
             test_cases = await cursor.fetchall()
 
-        for test_case in test_cases:
-            input_code = f"""
-from io import StringIO
-import sys
-
-sys.stdin = StringIO('{test_case[1]}')
-"""
-            full_code = input_code + code  # type: ignore
-            result = await self.run(full_code)
-            if result["stdout"] != test_case[2] + "\n":
-                await ctx.send(
-                    f"You failed test case {test_case[0]}\nExpected: {test_case[2]}\nActual: {result['stdout']}"
+        results = []
+        all_right = True
+        for i, test_case in enumerate(test_cases, start=1):
+            result = await self.run(CODE_TEMPLATE.format(input=test_case[1], code=code))
+            if result["stdout"] != test_case[2]:
+                results.append(
+                    f"**Test Case {i}**: :x:\nGot: ```\n{result['stdout']}\n```Expected: ```\n{test_case[2]}\n```"
                 )
+                all_right = False
             else:
-                await ctx.send(f"Passed test case {test_case[0]}!")
+                results.append(f"**Test Case {i}**: :white_check_mark:\n")
+
+        if all_right:
+            summary = "All test cases passed! Good job :pleading_face: :tada:"
+        else:
+            summary = "Failed some test cases :frowning:. Try again :("
+
+        await ctx.send(
+            CHECK_OUTPUT_TEMPLATE.format(
+                mention=ctx.author.mention, results="\n".join(results), summary=summary
+            )
+        )
 
     @commands.command(name="eval", aliases=("e",))
     async def eval_command(self, ctx: Context, *, code: CodeblockConverter):
         async with ctx.typing():
             result = await self.run(code)
         await ctx.send(
-            f"Your eval output {ctx.author.mention}:\n```\n{result['stdout']}```"
+            f"{ctx.author.mention} Your eval finished with exit code {result['returncode']}:\n```\n{result['stdout']}\n```"
         )
 
 

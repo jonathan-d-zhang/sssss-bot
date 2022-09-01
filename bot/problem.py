@@ -179,7 +179,7 @@ class Problem(commands.Cog):
         else:
             await self.bot.db.executemany(
                 "INSERT INTO test_cases(input, output, problem_number) VALUES(?1, ?2, ?3)",
-                [[input, output, problem_number] for input, output in cases],
+                [[input, output + "\n", problem_number] for input, output in cases],
             )
             await self.bot.db.commit()
 
