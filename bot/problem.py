@@ -10,6 +10,11 @@ from bot.constants import Guild
 log = logging.getLogger(__name__)
 
 
+class InvalidProblemNumber(ValueError):
+    def __init__(self, problem_number):
+        super().__init__("Problem number {problem_number} doesn't exist")
+
+
 def is_teacher():
     async def predicate(ctx):
         return ctx.author.id in Guild.teachers
@@ -46,6 +51,13 @@ class Problem(commands.Cog):
     #
     #        await ctx.send(embed=embed)
 
+    async def _is_valid_problem_number(self, problem_number: int):
+        async with self.bot.db.execute(
+            "SELECT 1 FROM problems WHERE problems.id = ?", (problem_number,)
+        ) as cursor:
+            t = cursor.fetchone()
+            return bool(t)
+
     @group(name="problem", aliases=("p",), invoke_without_command=True)
     async def problem_group(self, ctx: Context) -> None:
         await ctx.send_help(ctx.command)
@@ -65,17 +77,42 @@ class Problem(commands.Cog):
     async def edit_problem(
         self, ctx: Context, problem_number: int, *, description: str
     ) -> None:
-        cur = await self.bot.db.cursor()
-        await cur.execute(
+        if not self._is_valid_problem_number(problem_number):
+            raise InvalidProblemNumber(problem_number)
+        async with self.bot.db.execute(
             "UPDATE problems SET description = ?2 WHERE id = ?1",
             (problem_number, description),
-        )
-        await self.bot.db.commit()
+        ):
+            await self.bot.db.commit()
 
         log.info("{ctx.author} edited description of problem {problem_number}")
         await ctx.send(
             f"{ctx.author.mention} Successfully updated problem {problem_number}"
         )
+
+    @problem_group.command(name="delete")
+    @is_teacher()
+    async def delete_problem(self, ctx: Context, problem_number: int):
+        ...
+
+    @problem_group.command(name="deactivate")
+    @is_teacher()
+    async def deactivate_problem(self, ctx: Context, problem_number: int):
+        log.info(f"{ctx.author.id} deactivated problem {problem_number}")
+        async with self.bot.db.execute(
+            "UPDATE problems SET active = FALSE WHERE problems.id = ?",
+            (problem_number,),
+        ):
+            await self.bot.db.commit()
+
+    @problem_group.command(name="activate")
+    @is_teacher()
+    async def activate_problem(self, ctx: Context, problem_number: int):
+        log.info(f"{ctx.author.id} activated problem {problem_number}")
+        async with self.bot.db.execute(
+            "UPDATE problems SET active = TRUE WHERE problems.id = ?", (problem_number,)
+        ):
+            await self.bot.db.commit()
 
     @group(name="testcase", aliases=("tc",), invoke_without_command=True)
     async def test_case_group(self, ctx: Context):
