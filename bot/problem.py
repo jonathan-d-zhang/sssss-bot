@@ -107,7 +107,18 @@ class Problem(commands.Cog):
     @problem_group.command(name="delete")
     @is_teacher()
     async def delete_problem(self, ctx: Context, problem_number: int):
-        ...
+        if not await self._is_valid_problem_number(problem_number):
+            raise InvalidProblemNumber(problem_number)
+
+        async with self.bot.db.cursor() as cursor:
+            await cursor.execute(
+                "DELETE FROM problems WHERE problems.id = ?", (problem_number,)
+            )
+            await cursor.execute(
+                "DELETE FROM test_cases WHERE test_cases.problem_number = ?",
+                (problem_number,),
+            )
+            await self.bot.db.commit()
 
     @problem_group.command(name="deactivate")
     @is_teacher()
@@ -145,7 +156,7 @@ class Problem(commands.Cog):
     ) -> None:
         """
         Add one or more test cases to a given problem.
-        The test cases must follow the format "input::output"
+        Example usage: !testcase add input1 output1 input2 output2
         """
 
         if not await self._is_valid_problem_number(problem_number):
