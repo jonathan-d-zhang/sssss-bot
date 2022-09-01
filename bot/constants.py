@@ -63,6 +63,12 @@ class Guild(metaclass=ConfigMeta):
     student_channels: list[int]
 
 
+class Roles(metaclass=ConfigMeta):
+    location = "guild.roles"
+
+    students: int
+
+
 class Snekbox(metaclass=ConfigMeta):
     location = ""
 

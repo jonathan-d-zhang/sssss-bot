@@ -84,7 +84,7 @@ class CodeEval(commands.Cog):
             result = await self.run(CODE_TEMPLATE.format(input=test_case[1], code=code))
             if result["stdout"] != test_case[2]:
                 results.append(
-                    f"**Test Case {i}**: :x:\nGot: ```\n{result['stdout']}\n```Expected: ```\n{test_case[2]}\n```"
+                    f"**Test Case {i}**: :x:\nYour output: ```\n{result['stdout']}\n```Expected output: ```\n{test_case[2]}\n```"
                 )
                 all_right = False
             else:

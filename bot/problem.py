@@ -5,9 +5,15 @@ from discord.ext import commands
 from discord.ext.commands import Context, errors, group
 
 from bot import Bot
-from bot.constants import Guild
+from bot.constants import Guild, Roles
 
 log = logging.getLogger(__name__)
+
+POST_PROBLEM_TEMPLATE = """\
+**Problem {number}**
+
+{description}
+"""
 
 
 class InvalidProblemNumber(errors.CommandError):
@@ -57,20 +63,19 @@ class Problem(commands.Cog):
         await ctx.send(str(problems) + "\n" + str(test_cases))
 
     @commands.command()
+    @is_teacher()
     async def post(self, ctx: Context) -> None:
-
         async with self.bot.db.execute(
-            "SELECT description from problems WHERE problems.active = 1"
+            "SELECT id, description from problems WHERE problems.active = 1"
         ) as cursor:
             problems = await cursor.fetchall()
 
-        print(problems)
+        body = f"<@{Roles.students}>\n" + "\n\n".join(
+            POST_PROBLEM_TEMPLATE.format(number=id, description=description)
+            for id, description in problems
+        )
 
-    #        embed = Embed(
-    #            color=0x36ff90,
-    #        )
-    #
-    #        await ctx.send(embed=embed)
+        await ctx.send(body)
 
     @group(name="problem", aliases=("p",), invoke_without_command=True)
     async def problem_group(self, ctx: Context) -> None:
