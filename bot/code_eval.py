@@ -60,7 +60,7 @@ import sys
 
 sys.stdin = StringIO('{test_case[1]}')
 """
-            full_code = input_code + code
+            full_code = input_code + code  # type: ignore
             result = await self.run(full_code)
             if result["stdout"] != test_case[2] + "\n":
                 await ctx.send(

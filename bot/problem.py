@@ -3,6 +3,7 @@ import logging
 
 import aiosqlite
 from discord.ext import commands
+from discord.ext.commands import Context, group
 
 from bot import Bot
 from bot.constants import Guild
@@ -32,9 +33,13 @@ class Problem(commands.Cog):
         )
         await self.bot.db.commit()
 
-    @commands.command()
+    @group(name="problem", aliases=("p",), invoke_without_command=True)
+    async def problem_group(self, ctx):
+        await ctx.send_help(ctx.command)
+
+    @problem_group.command(aliases=("p",))
     @is_teacher()
-    async def post(self, ctx, *, description: str):
+    async def post(self, ctx: Context, *, description: str):
         log.info(f"{ctx.author} used post with {description=}")
         await self.bot.db.execute(
             "INSERT INTO problems(description) VALUES(?)", (description,)
@@ -42,8 +47,8 @@ class Problem(commands.Cog):
         await self.bot.db.commit()
         await ctx.send(f"{ctx.author.mention} Successfully added problem!")
 
-    @commands.command()
-    async def dump(self, ctx):
+    @problem_group.command()
+    async def dump(self, ctx: Context):
         async with self.bot.db.execute("SELECT * FROM problems") as cursor:
             problems = await cursor.fetchall()
         async with self.bot.db.execute("SELECT * FROM test_cases") as cursor:
@@ -51,9 +56,9 @@ class Problem(commands.Cog):
 
         await ctx.send(str(problems) + "\n" + str(test_cases))
 
-    @commands.command()
+    @problem_group.command(aliases=("e",))
     @is_teacher()
-    async def edit(self, ctx, problem_number: int, *, description: str):
+    async def edit(self, ctx: Context, problem_number: int, *, description: str):
         cur = await self.bot.db.cursor()
         await cur.execute(
             "UPDATE problems SET description = ?2 WHERE id = ?1",
@@ -66,9 +71,13 @@ class Problem(commands.Cog):
             f"{ctx.author.mention} Successfully updated problem {problem_number}"
         )
 
-    @commands.command(name="tca")
+    @group(name="testcase", aliases=("tc",))
+    async def test_case_group(self, ctx: Context):
+        await ctx.send_help(ctx.command)
+
+    @test_case_group.command(name="tca")
     @is_teacher()
-    async def add_test_case(self, ctx, problem_number: int, test_case: str):
+    async def add_test_case(self, ctx: Context, problem_number: int, test_case: str):
         """
         Add a test case to a given function. The test case must be in the format:
         "input:#:output"
@@ -85,5 +94,5 @@ class Problem(commands.Cog):
         )
 
 
-async def setup(bot):
+async def setup(bot: Bot):
     await bot.add_cog(Problem(bot))
