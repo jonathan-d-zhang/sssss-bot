@@ -1,7 +1,6 @@
-import asyncio
 import logging
 
-import aiosqlite
+from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import Context, group
 
@@ -21,33 +20,8 @@ def is_teacher():
 class Problem(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
-        asyncio.create_task(self.setup_database())
 
-    async def setup_database(self):
-        self.bot.db = await aiosqlite.connect("sssss.db")
-        await self.bot.db.execute(
-            "CREATE TABLE IF NOT EXISTS problems(id INTEGER PRIMARY KEY, description TEXT)"
-        )
-        await self.bot.db.execute(
-            "CREATE TABLE IF NOT EXISTS test_cases(tc_id INTEGER PRIMARY KEY, input TEXT, output TEXT, problem_number INTEGER, FOREIGN KEY(problem_number) REFERENCES problems(id))"
-        )
-        await self.bot.db.commit()
-
-    @group(name="problem", aliases=("p",), invoke_without_command=True)
-    async def problem_group(self, ctx: Context) -> None:
-        await ctx.send_help(ctx.command)
-
-    @problem_group.command(aliases=("p",))
-    @is_teacher()
-    async def post(self, ctx: Context, *, description: str) -> None:
-        log.info(f"{ctx.author} used post with {description=}")
-        await self.bot.db.execute(
-            "INSERT INTO problems(description) VALUES(?)", (description,)
-        )
-        await self.bot.db.commit()
-        await ctx.send(f"{ctx.author.mention} Successfully added problem!")
-
-    @problem_group.command()
+    @commands.command()
     async def dump(self, ctx: Context) -> None:
         async with self.bot.db.execute("SELECT * FROM problems") as cursor:
             problems = await cursor.fetchall()
@@ -56,9 +30,39 @@ class Problem(commands.Cog):
 
         await ctx.send(str(problems) + "\n" + str(test_cases))
 
-    @problem_group.command(aliases=("e",))
+    @commands.command()
+    async def post(self, ctx: Context) -> None:
+
+        async with self.bot.db.execute(
+            "SELECT description from problems WHERE problems.active = 1"
+        ) as cursor:
+            problems = await cursor.fetchall()
+
+        print(problems)
+
+    #        embed = Embed(
+    #            color=0x36ff90,
+    #        )
+    #
+    #        await ctx.send(embed=embed)
+
+    @group(name="problem", aliases=("p",), invoke_without_command=True)
+    async def problem_group(self, ctx: Context) -> None:
+        await ctx.send_help(ctx.command)
+
+    @problem_group.command(name="add", aliases=("a",))
     @is_teacher()
-    async def edit(
+    async def add_problem(self, ctx: Context, *, description: str) -> None:
+        log.info(f"{ctx.author} used post")
+        await self.bot.db.execute(
+            "INSERT INTO problems(description, active) VALUES(?, ?)", (description, 1)
+        )
+        await self.bot.db.commit()
+        await ctx.send(f"{ctx.author.mention} Successfully added problem!")
+
+    @problem_group.command(name="edit", aliases=("e",))
+    @is_teacher()
+    async def edit_problem(
         self, ctx: Context, problem_number: int, *, description: str
     ) -> None:
         cur = await self.bot.db.cursor()
@@ -80,21 +84,62 @@ class Problem(commands.Cog):
     @test_case_group.command(name="add", aliases=("a",))
     @is_teacher()
     async def add_test_case(
-        self, ctx: Context, problem_number: int, input: str, output: str
+        self, ctx: Context, problem_number: int, *, test_cases: str
     ) -> None:
         """
-        Add a test case to a given problem.
+        Add one or more test cases to a given problem.
+        The test cases must follow the format "input::output"
         """
-        await self.bot.db.execute(
-            "INSERT INTO test_cases(input, output, problem_number) VALUES(?1, ?2, ?3)",
-            [input, output, problem_number],
-        )
-        await self.bot.db.commit()
 
-        log.info(f"{ctx.author} added test case to problem {problem_number}")
-        await ctx.send(
-            f"{ctx.author.mention} Successfully added test case to problem {problem_number}"
-        )
+        try:
+            cases = list(zip(*([iter(test_cases.split())] * 2), strict=True))  # type: ignore
+        except ValueError:
+            log.debug(
+                "%s used test_case add with different number of inputs and outputs"
+                % ctx.author
+            )
+            await ctx.send(
+                embed=Embed(
+                    title="Oh no",
+                    description="Number of inputs and outputs does not match",
+                    color=0xFF0000,
+                )
+            )
+        else:
+            await self.bot.db.executemany(
+                "INSERT INTO test_cases(input, output, problem_number) VALUES(?1, ?2, ?3)",
+                [[input, output, problem_number] for input, output in cases],
+            )
+            await self.bot.db.commit()
+
+            log.info(
+                f"{ctx.author} added {len(cases)} test cases to problem {problem_number}"
+            )
+            await ctx.send(
+                f"{ctx.author.mention} Successfully added test case{'s' * bool(len(cases)-1)} to problem {problem_number}"
+            )
+
+    @test_case_group.command(name="edit", aliases=("e",))
+    @is_teacher()
+    async def edit_test_case(
+        self, ctx: Context, tc_number: int, input: str, output: str
+    ) -> None:
+        log.info(f"{ctx.author} edited test case {tc_number}")
+        async with self.bot.db.execute(
+            "UPDATE test_cases SET input = ?1, output = ?2 WHERE test_cases.tc_id = ?3",
+            (input, output, tc_number),
+        ):
+            await self.bot.db.commit()
+
+    @test_case_group.command(name="delete", aliases=("d",))
+    @is_teacher()
+    async def delete_test_case(self, ctx: Context, tc_number: int) -> None:
+        log.info(f"{ctx.author} deleted test case {tc_number}")
+
+        async with self.bot.db.execute(
+            "DELETE FROM test_cases WHERE test_cases.tc_id = ?", (tc_number,)
+        ):
+            await self.bot.db.commit()
 
 
 async def setup(bot: Bot):

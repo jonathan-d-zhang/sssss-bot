@@ -13,9 +13,6 @@ log = logging.getLogger(__name__)
 
 intents = discord.Intents.all()
 
-print(constants.Test.test)
-exit(1)
-
 
 async def main():
     with httpx.Client() as http_session:

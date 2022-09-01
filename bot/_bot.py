@@ -13,9 +13,9 @@ class Bot(commands.Bot):
         self.db: aiosqlite.Connection
 
     async def setup_database(self):
-        self.db = await aiosqlite.connect("sssss.db")
+        self.db = await aiosqlite.connect("data/sssss.db")
         await self.db.execute(
-            "CREATE TABLE IF NOT EXISTS problems(id INTEGER PRIMARY KEY, description TEXT)"
+            "CREATE TABLE IF NOT EXISTS problems(id INTEGER PRIMARY KEY, description TEXT, active BOOLEAN)"
         )
         await self.db.execute(
             "CREATE TABLE IF NOT EXISTS test_cases(tc_id INTEGER PRIMARY KEY, input TEXT, output TEXT, problem_number INTEGER, FOREIGN KEY(problem_number) REFERENCES problems(id))"
