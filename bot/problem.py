@@ -71,11 +71,11 @@ class Problem(commands.Cog):
             f"{ctx.author.mention} Successfully updated problem {problem_number}"
         )
 
-    @group(name="testcase", aliases=("tc",))
+    @group(name="testcase", aliases=("tc",), invoke_without_command=True)
     async def test_case_group(self, ctx: Context):
         await ctx.send_help(ctx.command)
 
-    @test_case_group.command(name="tca")
+    @test_case_group.command(name="add", aliases=("a",))
     @is_teacher()
     async def add_test_case(self, ctx: Context, problem_number: int, test_case: str):
         """

@@ -21,9 +21,11 @@ async def main():
             command_prefix=constants.Bot.prefix,
             intents=intents,
         )
+
         await bot.setup_database()
         await bot.load_extension("bot.problem")
         await bot.load_extension("bot.code_eval")
+        await bot.load_extension("bot.error_handler")
 
         await bot.start(pathlib.Path(constants.Bot.token_file).read_text())
 
