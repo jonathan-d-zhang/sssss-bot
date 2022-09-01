@@ -40,13 +40,34 @@ class CodeEval(commands.Cog):
         self.bot = bot
 
     async def run(self, code):
-        r = self.bot.http_session.post(constants.Snekbox.snekbox_url, data={"input": code})
+        r = self.bot.http_session.post(
+            constants.Snekbox.snekbox_url, data={"input": code}
+        )
         return r.json()
 
     @commands.command()
     @channel_matches()
-    async def check(self, ctx, problem_number: int, code: CodeblockConverter):
-        ...
+    async def check(self, ctx, problem_number: int, *, code: CodeblockConverter):
+        async with self.bot.db.execute(
+            "SELECT * FROM test_cases WHERE problem_number = ?", (problem_number,)
+        ) as cursor:
+            test_cases = await cursor.fetchall()
+
+        for test_case in test_cases:
+            input_code = f"""
+from io import StringIO
+import sys
+
+sys.stdin = StringIO('{test_case[1]}')
+"""
+            full_code = input_code + code
+            result = await self.run(full_code)
+            if result["stdout"] != test_case[2] + "\n":
+                await ctx.send(
+                    f"You failed test case {test_case[0]}\nExpected: {test_case[2]}\nActual: {result['stdout']}"
+                )
+            else:
+                await ctx.send(f"Passed test case {test_case[0]}!")
 
     @commands.command(name="eval", aliases=("e",))
     async def eval_command(self, ctx, *, code: CodeblockConverter):
