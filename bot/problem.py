@@ -40,6 +40,7 @@ class Problem(commands.Cog):
             "INSERT INTO problems(description) VALUES(?)", (description,)
         )
         await self.bot.db.commit()
+        await ctx.send(f"{ctx.author.mention} Successfully added problem!")
 
     @commands.command()
     async def dump(self, ctx):
