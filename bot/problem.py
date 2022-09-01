@@ -2,7 +2,7 @@ import logging
 
 from discord import Embed
 from discord.ext import commands
-from discord.ext.commands import Context, group
+from discord.ext.commands import Context, errors, group
 
 from bot import Bot
 from bot.constants import Guild
@@ -10,9 +10,16 @@ from bot.constants import Guild
 log = logging.getLogger(__name__)
 
 
-class InvalidProblemNumber(ValueError):
+class InvalidProblemNumber(errors.CommandError):
     def __init__(self, problem_number):
         super().__init__("Problem number {problem_number} doesn't exist")
+        self.problem_number = problem_number
+
+
+class InvalidTestCaseNumber(errors.CommandError):
+    def __init__(self, test_case_number):
+        super().__init__(f"Test case number {test_case_number} doesn't exist")
+        self.test_case_number = test_case_number
 
 
 def is_teacher():
@@ -25,6 +32,20 @@ def is_teacher():
 class Problem(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
+
+    async def _is_valid_problem_number(self, problem_number: int):
+        async with self.bot.db.execute(
+            "SELECT 1 FROM problems WHERE problems.id = ?", (problem_number,)
+        ) as cursor:
+            t = await cursor.fetchone()
+            return bool(t)
+
+    async def _is_valid_test_case_number(self, tc_number: int):
+        async with self.bot.db.execute(
+            "SELECT 1 FROM test_cases WHERE test_cases.tc_id = ?", (tc_number,)
+        ) as cursor:
+            t = await cursor.fetchone()
+            return bool(t)
 
     @commands.command()
     async def dump(self, ctx: Context) -> None:
@@ -51,13 +72,6 @@ class Problem(commands.Cog):
     #
     #        await ctx.send(embed=embed)
 
-    async def _is_valid_problem_number(self, problem_number: int):
-        async with self.bot.db.execute(
-            "SELECT 1 FROM problems WHERE problems.id = ?", (problem_number,)
-        ) as cursor:
-            t = cursor.fetchone()
-            return bool(t)
-
     @group(name="problem", aliases=("p",), invoke_without_command=True)
     async def problem_group(self, ctx: Context) -> None:
         await ctx.send_help(ctx.command)
@@ -77,7 +91,7 @@ class Problem(commands.Cog):
     async def edit_problem(
         self, ctx: Context, problem_number: int, *, description: str
     ) -> None:
-        if not self._is_valid_problem_number(problem_number):
+        if not await self._is_valid_problem_number(problem_number):
             raise InvalidProblemNumber(problem_number)
         async with self.bot.db.execute(
             "UPDATE problems SET description = ?2 WHERE id = ?1",
@@ -98,6 +112,9 @@ class Problem(commands.Cog):
     @problem_group.command(name="deactivate")
     @is_teacher()
     async def deactivate_problem(self, ctx: Context, problem_number: int):
+        if not await self._is_valid_problem_number(problem_number):
+            raise InvalidProblemNumber(problem_number)
+
         log.info(f"{ctx.author.id} deactivated problem {problem_number}")
         async with self.bot.db.execute(
             "UPDATE problems SET active = FALSE WHERE problems.id = ?",
@@ -108,6 +125,9 @@ class Problem(commands.Cog):
     @problem_group.command(name="activate")
     @is_teacher()
     async def activate_problem(self, ctx: Context, problem_number: int):
+        if not await self._is_valid_problem_number(problem_number):
+            raise InvalidProblemNumber(problem_number)
+
         log.info(f"{ctx.author.id} activated problem {problem_number}")
         async with self.bot.db.execute(
             "UPDATE problems SET active = TRUE WHERE problems.id = ?", (problem_number,)
@@ -127,6 +147,9 @@ class Problem(commands.Cog):
         Add one or more test cases to a given problem.
         The test cases must follow the format "input::output"
         """
+
+        if not await self._is_valid_problem_number(problem_number):
+            raise InvalidProblemNumber(problem_number)
 
         try:
             cases = list(zip(*([iter(test_cases.split())] * 2), strict=True))  # type: ignore
@@ -161,22 +184,29 @@ class Problem(commands.Cog):
     async def edit_test_case(
         self, ctx: Context, tc_number: int, input: str, output: str
     ) -> None:
-        log.info(f"{ctx.author} edited test case {tc_number}")
+        if not await self._is_valid_test_case_number(tc_number):
+            raise InvalidTestCaseNumber(tc_number)
+
         async with self.bot.db.execute(
             "UPDATE test_cases SET input = ?1, output = ?2 WHERE test_cases.tc_id = ?3",
             (input, output, tc_number),
         ):
             await self.bot.db.commit()
 
+        log.info(f"{ctx.author} edited test case {tc_number}")
+
     @test_case_group.command(name="delete", aliases=("d",))
     @is_teacher()
     async def delete_test_case(self, ctx: Context, tc_number: int) -> None:
-        log.info(f"{ctx.author} deleted test case {tc_number}")
+        if not await self._is_valid_test_case_number(tc_number):
+            raise InvalidTestCaseNumber(tc_number)
 
         async with self.bot.db.execute(
             "DELETE FROM test_cases WHERE test_cases.tc_id = ?", (tc_number,)
         ):
             await self.bot.db.commit()
+
+        log.info(f"{ctx.author} deleted test case {tc_number}")
 
 
 async def setup(bot: Bot):

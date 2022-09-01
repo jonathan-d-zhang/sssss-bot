@@ -4,6 +4,7 @@ from discord import Embed
 from discord.ext.commands import Cog, Context, errors
 
 from bot import Bot
+from bot.problem import InvalidProblemNumber, InvalidTestCaseNumber
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +35,16 @@ class ErrorHandler(Cog):
                 )
         elif isinstance(e, errors.CommandNotFound):
             embed = self.make_embed("Command not found", "Check your spelling")
+        elif isinstance(e, InvalidProblemNumber):
+            embed = self.make_embed(
+                "Invalid problem number",
+                "Problem %d doesn't exist, try again." % e.problem_number,
+            )
+        elif isinstance(e, InvalidTestCaseNumber):
+            embed = self.make_embed(
+                "Invalid test case number",
+                "Test case %d doesn't exist, try again." % e.test_case_number,
+            )
         else:
             embed = self.make_embed("Uh oh", "Some error happened, %s" % str(e))
 
