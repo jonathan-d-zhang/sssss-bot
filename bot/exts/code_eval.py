@@ -23,8 +23,10 @@ FORMATTED_CODE_REGEX = re.compile(
 CODE_TEMPLATE = """\
 from io import StringIO
 import sys
+import builtins
 
 sys.stdin = StringIO('{input}')
+input = lambda *args: builtins.input()
 {code}
 """
 

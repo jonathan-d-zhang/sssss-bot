@@ -70,7 +70,7 @@ class Problem(commands.Cog):
         ) as cursor:
             problems = await cursor.fetchall()
 
-        body = f"<@{Roles.students}>\n" + "\n\n".join(
+        body = f"<@&{Roles.students}>\n" + "\n\n".join(
             POST_PROBLEM_TEMPLATE.format(number=id, description=description)
             for id, description in problems
         )
