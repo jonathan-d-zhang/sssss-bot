@@ -1,8 +1,6 @@
 import re
 import typing
 
-from discord import Embed
-from discord.errors import HTTPException
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ext.commands.converter import Converter
