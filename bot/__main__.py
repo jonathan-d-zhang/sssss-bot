@@ -29,5 +29,7 @@ async def main():
 
         await bot.start(pathlib.Path(constants.Bot.token_file).read_text())
 
+    await bot.start(pathlib.Path(constants.Bot.token_file).read_text())
+
 
 asyncio.run(main())
