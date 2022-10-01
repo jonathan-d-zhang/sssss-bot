@@ -1,7 +1,8 @@
-import toml
-from pathlib import Path
-import logging
 import collections
+import logging
+from pathlib import Path
+
+import toml
 
 log = logging.getLogger(__name__)
 
@@ -9,15 +10,17 @@ if Path("config.toml").exists():
     log.info("Loading config found at config.toml")
     with open("config.toml") as f:
         data = toml.load(f)
-    print(data)
+    log.info(f"Loaded config data {data}")
 else:
     log.error("No config, exiting")
-    exit(1)
+    import sys
+
+    sys.exit(1)
 
 
 class ConfigMeta(type):
     """
-    Metaclass to allow accessing config data using dot notation, e.g. constants.Guild.BOT_TOKEN
+    Metaclass to allow accessing config data using dot notation, e.g. constants.Guild.token_file
 
     Supports arbitrary nesting of tables.
     """
@@ -30,27 +33,43 @@ class ConfigMeta(type):
         if cls.location is None:
             assert False
 
-        location = collections.deque(cls.location.split("."))
-
         try:
-            outer = data[location.popleft()]
-            while location:
-                outer = outer[location.popleft()]
+            path = collections.deque(cls.location.split("."))
+            outer = data
+            while path:
+                n = path.popleft()
+                if n:
+                    outer = outer[n]
         except KeyError:
-            print(f"Invalid location: {cls.location}")
+            log.error("Invalid location: %s", cls.location)
         else:
             try:
                 return outer[name]
             except KeyError:
-                print(f"Config value {name} not found")
+                log.error("Config value %s not found", name)
 
 
 class Bot(metaclass=ConfigMeta):
     location = "bot"
+
     prefix: str
     token_file: str
 
 
 class Guild(metaclass=ConfigMeta):
     location = "guild"
+
     teachers: list[int]
+    student_channels: list[int]
+
+
+class Roles(metaclass=ConfigMeta):
+    location = "guild.roles"
+
+    students: int
+
+
+class Snekbox(metaclass=ConfigMeta):
+    location = ""
+
+    snekbox_url: str

@@ -1,2 +1,6 @@
 discord>="2.0.0"
-toml>="0.10.2"
+aiosqlite>="0.17"
+toml>="0.10"
+httpx>="0.23.0"
+pre-commit>="2.20.0"
+
